@@ -38,17 +38,21 @@ def generate_launch_description():
     return LaunchDescription(
         [
             # ROS 2 parameters
-            DeclareLaunchArgument("topic", description="sensor_msg/PointCloud2 topic to process"),
+            DeclareLaunchArgument(
+                "topic",
+                default_value="ouster/points/corrected",
+                description="sensor_msg/PointCloud2 topic to process",
+            ),
             DeclareLaunchArgument("bagfile", default_value=""),
             DeclareLaunchArgument("visualize", default_value="true"),
             DeclareLaunchArgument("odom_frame", default_value="odom"),
             DeclareLaunchArgument("child_frame", default_value="base_link"),
-            DeclareLaunchArgument("publish_odom_tf", default_value="true"),
-            DeclareLaunchArgument("publish_alias_tf", default_value="true"),
+            DeclareLaunchArgument("publish_odom_tf", default_value="false"),
+            DeclareLaunchArgument("publish_alias_tf", default_value="false"),
             # KISS-ICP parameters
             DeclareLaunchArgument("deskew", default_value="false"),
             DeclareLaunchArgument("max_range", default_value="100.0"),
-            DeclareLaunchArgument("min_range", default_value="5.0"),
+            DeclareLaunchArgument("min_range", default_value="2.0"),
             # This thing is still not suported: https://github.com/ros2/launch/issues/290#issuecomment-1438476902
             #  DeclareLaunchArgument("voxel_size", default_value=None),
             Node(
@@ -56,7 +60,11 @@ def generate_launch_description():
                 executable="odometry_node",
                 name="odometry_node",
                 output="screen",
-                remappings=[("pointcloud_topic", LaunchConfiguration("topic"))],
+                remappings=[
+                    ("pointcloud_topic", LaunchConfiguration("topic")),
+                    ("odometry", "/kiss_icp/odometry"),
+                ],
+                # namespace="/kiss_icp",
                 parameters=[
                     {
                         "odom_frame": LaunchConfiguration("odom_frame"),
@@ -77,7 +85,10 @@ def generate_launch_description():
                 package="rviz2",
                 executable="rviz2",
                 output={"both": "log"},
-                arguments=["-d", PathJoinSubstitution([current_pkg, "rviz", "kiss_icp_ros2.rviz"])],
+                arguments=[
+                    "-d",
+                    PathJoinSubstitution([current_pkg, "rviz", "kiss_icp_ros2.rviz"]),
+                ],
                 condition=IfCondition(LaunchConfiguration("visualize")),
             ),
             ExecuteProcess(
